@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐍 Cobra Scores - Resultados de Fútbol</title>
+    <meta name="description" content="Resultados de fútbol en tiempo real de las principales ligas europeas">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <h1>🐍 Cobra Scores</h1>
+        <nav>
+            <ul>
+                <li><a href="#" data-section="results" class="active">Resultados</a></li>
+                <li><a href="#" data-section="calendar">Calendario</a></li>
+                <li><a href="#" data-section="standings">Clasificaciones</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section id="results-section" class="active-section">
+            <h2>⚽ Partidos Recientes</h2>
+            <div style="margin-bottom: 1.5rem;">
+                <label for="league-select">🏆 Selecciona una Liga:</label>
+                <select id="league-select">
+                    <option value="PL">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League</option>
+                    <option value="PD">🇪🇸 LaLiga</option>
+                    <option value="BL1">🇩🇪 Bundesliga</option>
+                    <option value="SA">🇮🇹 Serie A</option>
+                    <option value="FL1">🇫🇷 Ligue 1</option>
+                </select>
+            </div>
+            <div id="matches-container" class="grid-container"></div>
+        </section>
+
+        <section id="calendar-section" style="display: none;">
+            <h2>📅 Próximos Partidos</h2>
+            <div style="margin-bottom: 1.5rem;">
+                <label for="league-select">🏆 Liga:</label>
+                <p style="color: #ffd580; font-size: 0.9rem; margin-top: 0.5rem;">
+                    El selector de liga de la sección anterior se aplica aquí también
+                </p>
+            </div>
+            <div id="calendar-container" class="grid-container"></div>
+        </section>
+
+        <section id="standings-section" style="display: none;">
+            <h2>🏆 Clasificaciones de Liga</h2>
+            <div style="margin-bottom: 1.5rem;">
+                <p style="color: #ffd580; font-size: 0.9rem;">
+                    Mostrando clasificación de: <strong id="current-league">Premier League</strong>
+                </p>
+                <div style="margin-top: 1rem;">
+                    <span style="display: inline-block; margin-right: 1rem;">
+                        <span style="display: inline-block; width: 4px; height: 20px; background: #4caf50; vertical-align: middle; margin-right: 5px;"></span>
+                        Champions League
+                    </span>
+                    <span style="display: inline-block; margin-right: 1rem;">
+                        <span style="display: inline-block; width: 4px; height: 20px; background: #ff9800; vertical-align: middle; margin-right: 5px;"></span>
+                        Europa League
+                    </span>
+                    <span style="display: inline-block;">
+                        <span style="display: inline-block; width: 4px; height: 20px; background: #f44336; vertical-align: middle; margin-right: 5px;"></span>
+                        Descenso
+                    </span>
+                </div>
+            </div>
+            <div id="standings-container" class="grid-container"></div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 Cobra Scores | Desarrollado por Oscar Baso 🐍</p>
+        <p style="font-size: 0.8rem; margin-top: 0.5rem;">
+            Datos proporcionados por Football-Data.org
+        </p>
+    </footer>
+
+    <script src="js/main.js"></script>
+</body>
+</html>

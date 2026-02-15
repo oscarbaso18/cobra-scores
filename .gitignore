@@ -1,0 +1,25 @@
+# Node modules
+backend/node_modules/
+node_modules/
+
+# Variables de entorno
+backend/.env
+.env
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Archivos temporales
+*.tmp
+*.bak
