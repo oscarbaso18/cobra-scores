@@ -78,6 +78,32 @@
         </p>
     </footer>
 
+    <!-- Boton flotante para limpiar cache-->
+    <button id="clear-cache-btn" style="
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: #ff6f00;
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        border-radius: 50px;
+        cursor: pointer;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        font-weight: bold;
+        font-size: 0.9rem;
+        z-index: 1000;
+        transition: all 0.2s ease;
+    "
+    
+    onmouseover="this.style.transform='scale(1.1)'; this.style.boxShadow='0 6px 15 px rgba(255,111,0,0.6)';"
+    onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 10px rgba(0,0,0,0.3)';">
+        🗑️ Limpiar Cache
+    </button>
+
+
+
+    <script src="js/cache.js"></script>
     <script src="js/main.js"></script>
 </body>
 </html>

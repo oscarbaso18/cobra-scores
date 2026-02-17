@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
+const axios = require('axios');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -16,21 +17,17 @@ const BASE_URL = 'https://api.football-data.org/v4';
 // Función helper para hacer peticiones a la API
 async function fetchFromFootballAPI(endpoint) {
     try {
-        const response = await fetch(`${BASE_URL}${endpoint}`, {
+        const response = await axios.get(`${BASE_URL}${endpoint}`, {
             headers: {
                 'X-Auth-Token': API_KEY
             }
         });
 
-        if (!response.ok) {
-            if (response.status === 429) {
-                throw new Error('Demasiadas peticiones. Intenta más tarde.');
-            }
-            throw new Error(`Error HTTP: ${response.status}`);
-        }
-
-        return await response.json();
+        return response.data; //axios ya parsea JSON automaticamente
     } catch (error) {
+        if (error.response?.status === 429) {
+            throw new Error('Demasiadas peticiones. Intenta ,mas tarde.');
+        }
         console.error('Error al obtener datos:', error);
         throw error;
     }

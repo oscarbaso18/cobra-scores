@@ -49,27 +49,43 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Función para hacer peticiones al backend
-    async function fetchData(endpoint) {
-        try {
-            const response = await fetch(`${API_URL}${endpoint}`);
+   // Función para hacer peticiones al backend
+async function fetchData(endpoint) {
+    // Crear key única para el cache basada en el endpoint
+    const cacheKey = endpoint.replace(/\//g, '_').replace(/\?/g, '_').replace(/=/g, '_');
 
-            if (!response.ok) {
-                throw new Error(`Error HTTP: ${response.status}`);
-            }
-
-            return await response.json();
-        } catch (error) {
-            console.error('Error al obtener datos:', error);
-            
-            // Mostrar mensaje amigable al usuario
-            if (error.message.includes('Failed to fetch')) {
-                alert('⚠️ No se puede conectar al servidor. Asegúrate de que el backend esté corriendo en http://localhost:3000');
-            }
-            
-            return null;
-        }
+    // Intentar obtener del cache primero
+    const cached = CacheManager.get(cacheKey);
+    if (cached) {
+        console.log('📦 Datos cargados desde cache (rápido!)');
+        return cached;
     }
+
+    // Si no hay cache, hacer petición a la API
+    try {
+        console.log('🌐 Obteniendo datos frescos de la API...');
+        const response = await fetch(`${API_URL}${endpoint}`);
+
+        if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        // Guardar en cache para la próxima vez
+        CacheManager.set(cacheKey, data);
+
+        return data;
+    } catch (error) {
+        console.error('Error al obtener datos:', error);
+
+        if (error.message.includes('Failed to fetch')) {
+            alert('⚠️ No se puede conectar al servidor. Asegúrate de que el backend esté corriendo en http://localhost:3000');
+        }
+
+        return null;
+    }
+}
 
     // Función para obtener partidos
     async function fetchMatches(status = 'FINISHED') {
@@ -212,6 +228,21 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         return translations[status] || status;
     }
+
+    // Boton para limpiar cache
+    const clearCacheBtn = document.getElementById('clear-cache-btn');
+    if (clearCacheBtn) {
+        clearCacheBtn.addEventListener('click', () => {
+            if (confirm('¿Quieres limpiar el cache? Se recargarán todos los datos.')) {
+                CacheManager.clear();
+                alert('✅ Cache limpiado correctamente');
+                location.reloaded();
+            }
+        });
+    }
+
+    // Mostrar estadisticas del cache en consola (opcional)
+    console.log('📊 Estadísticas del cache:', CacheManager.getStats());
 
     // Cargar partidos al iniciar
     fetchMatches('FINISHED');
