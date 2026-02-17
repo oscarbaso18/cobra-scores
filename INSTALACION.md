@@ -63,7 +63,7 @@ Esto instalará:
 Abre el archivo `.env` y verifica que tu API Key esté ahí:
 
 ```
-FOOTBALL_API_KEY=799888fed8ec40f79ed05a7833421635
+FOOTBALL_API_KEY=XXXXXXXXXXXXX
 PORT=3000
 ```
 
