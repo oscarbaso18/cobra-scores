@@ -244,6 +244,39 @@ async function fetchData(endpoint) {
     // Mostrar estadisticas del cache en consola (opcional)
     console.log('📊 Estadísticas del cache:', CacheManager.getStats());
 
+    // ============================================
+    // MODO OSCURO - TOGGLE Y PERSISTENCIA
+    // ===================================
+    
+    const themeToggle = document.getElementById('theme-toggle');
+    const body = document.body;
+
+    // Funcion para aplicar tema
+    function applyTheme(theme) {
+        if (theme === 'dark') {
+            body.classList.add('dark-mode');
+            themeToggle.textContent = '🌙';
+        } else {
+            body.classList.remove('dark-mode');
+            themeToggle.textContent = '☀️';
+        }
+    }
+
+    //Cargar tema guardado al iniciar
+    const savedTheme = localStorage.getItem('cobra-theme') || 'light';
+    applyTheme(savedTheme);
+    console.log(`🎨 Tema cargado: ${savedTheme}`);
+
+    //Toggle al hacer clic
+    themeToggle.addEventListener('click', () => {
+        const currentTheme = body.classList.contains('dark-mode') ? 'dark' : 'light';
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+        applyTheme(newTheme);
+        localStorage.setItem('cobra-theme', newTheme);
+        console.log(`🎨 Tema cambiado a: ${newTheme}`);
+    });
+
     // Cargar partidos al iniciar
     fetchMatches('FINISHED');
 });
