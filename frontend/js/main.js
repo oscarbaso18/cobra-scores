@@ -99,6 +99,22 @@ async function fetchData(endpoint) {
         
         if (data?.matches?.length > 0) {
             container.innerHTML = '';
+
+            // Ordenar partidos por fecha (mas recientes primero)
+            const sortedMatches = data.matches.sort((a, b) => {
+                const dateA = new Date(a.utcDate);
+                const dateB = new Date(b.utcDate);
+
+                if (status === 'FINISHED') {
+                    // Resultados: mas recientes primero (descnedente)
+                    return dateB - dateA;
+                } else {
+                    // Calendario: mas proximos primero (ascendente)
+                    return dateA - dateB;
+                }
+               
+            });
+
             data.matches.forEach(match => {
                 const date = new Date(match.utcDate);
                 const card = document.createElement('div');
