@@ -293,6 +293,28 @@ async function fetchData(endpoint) {
         console.log(`🎨 Tema cambiado a: ${newTheme}`);
     });
 
+    // ============================================
+    // LIVE UPDATES - ACTUALIZACION AUTOMATICA
+    // ============================================
+
+    const AUTO_UPDATE_DELAY = 30000; // 30 SEGUNDOS
+
+    // Funcion para actualizar partidos automaticamente
+    function autoUpdateMatches() {
+        //Solo actualizar si estamos en la seccion de resultados
+        const resultsSection = document.getElementById('results-section');
+        const isResultsVisible = resultsSection.style.display !== 'none' && window.getComputedStyle(resultsSection).display !== 'none';
+
+        if (isResultsVisible) {
+            console.log('Actualización automática: Obteniendo partidos...');
+            fetchMatches('FINISHED');
+        }
+    }
+
+    // Iniciar actualizacion automatica
+    setInterval(autoUpdateMatches, AUTO_UPDATE_DELAY);
+    console.log('Actualización automática iniciada (cada 30 segundos)')
+
     // Cargar partidos al iniciar
     fetchMatches('FINISHED');
 });
