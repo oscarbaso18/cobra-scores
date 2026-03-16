@@ -7,7 +7,27 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors());
+// CORS configurado para producción
+const allowedOrigins = [
+    'http://localhost:5500',
+    'http://127.0.0.1:5500',
+    'https://cobra-scores.vercel.app',  // ← Tu dominio de Vercel
+    'https://tu-dominio-custom.com'     // ← Si tienes dominio propio
+];
+
+app.use(cors({
+    origin: function(origin, callback) {
+        // Permitir requests sin origin (como Postman)
+        if (!origin) return callback(null, true);
+        
+        if (allowedOrigins.indexOf(origin) === -1) {
+            return callback(new Error('CORS no permitido'), false);
+        }
+        return callback(null, true);
+    },
+    credentials: true
+}));
+
 app.use(express.json());
 
 // API Key (se guardará en .env)
