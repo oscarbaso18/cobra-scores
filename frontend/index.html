@@ -3,7 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🐍 Cobra Scores - Resultados de Fútbol</title>
+    <title>Cobra Scores - Resultados de Fútbol</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="images/cobra-logo.png">
+    <link rel="apple-touch-icon" href="images/cobra-logo.png">
+
     <meta name="description" content="Resultados de fútbol en tiempo real de las principales ligas europeas">
     <link rel="stylesheet" href="css/style.css">
 </head>
@@ -14,7 +19,11 @@
             ☀️
         </button>
         
-        <h1>🐍 Cobra Scores</h1>
+        <h1>
+            <img src="images/cobra-logo.png" alt="Cobra Logo" class="header-logo">
+            Cobra Scores
+        </h1>
+
         <nav>
             <ul>
                 <li><a href="#" data-section="results" class="active">Resultados</a></li>
@@ -84,29 +93,21 @@
     </footer>
 
     <!-- Boton flotante para limpiar cache-->
-    <button id="clear-cache-btn" style="
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        background: #ff6f00;
-        color: white;
-        border: none;
-        padding: 12px 20px;
-        border-radius: 50px;
-        cursor: pointer;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-        font-weight: bold;
-        font-size: 0.9rem;
-        z-index: 1000;
-        transition: all 0.2s ease;
-    "
-    
-    onmouseover="this.style.transform='scale(1.1)'; this.style.boxShadow='0 6px 15 px rgba(255,111,0,0.6)';"
-    onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 10px rgba(0,0,0,0.3)';">
-        🗑️ Limpiar Cache
-    </button>
+<button id="clear-cache-btn" class="cache-btn">
+    🗑️ Limpiar Cache
+</button>
 
+    </footer>
 
+    <!-- Modal de estadísticas del partido -->
+    <div id="match-modal" class="match-modal">
+        <div class="modal-content">
+            <span class="modal-close">&times;</span>
+            <div id="modal-body">
+                <!-- Aquí se cargará el contenido dinámicamente -->
+            </div>
+        </div>
+    </div>
 
     <script src="js/cache.js"></script>
     <script src="js/main.js"></script>

@@ -115,7 +115,7 @@ async function fetchData(endpoint) {
                
             });
 
-            data.matches.forEach(match => {
+            sortedMatches.forEach(match => {
                 const date = new Date(match.utcDate);
                 const card = document.createElement('div');
                 card.classList.add('match-card');
@@ -131,19 +131,64 @@ async function fetchData(endpoint) {
                     hour: '2-digit', 
                     minute: '2-digit' 
                 });
+                
+                // Obtener logos de equipos
+                const homeTeamLogo = match.homeTeam.crest || '';
+                const awayTeamLogo = match.awayTeam.crest || '';
 
                 card.innerHTML = `
-                    <h3>${match.homeTeam.name} vs ${match.awayTeam.name}</h3>
-                    <p><strong>🏆 Liga:</strong> ${match.competition.name}</p>
-                    <p><strong>📅 Fecha:</strong> ${dateStr}</p>
-                    <p><strong>🕐 Hora:</strong> ${timeStr}</p>
+                    <div class="match-teams">
+                        <div class="match-team">
+                            ${homeTeamLogo ? `<img src="${homeTeamLogo}" alt="${match.homeTeam.name}" class="match-team-logo" loading="lazy">` : ''}
+                            <span class="match-team-name">${match.homeTeam.shortName || match.homeTeam.name}</span>
+                        </div>
+                        <div class="match-vs">VS</div>
+                        <div class="match-team">
+                            ${awayTeamLogo ? `<img src="${awayTeamLogo}" alt="${match.awayTeam.name}" class="match-team-logo" loading="lazy">` : ''}
+                            <span class="match-team-name">${match.awayTeam.shortName || match.awayTeam.name}</span>
+                        </div>
+                    </div>
+                    
                     ${
                         match.score.fullTime.home !== null
-                        ? `<p><strong>⚽ Resultado:</strong> <span style="font-size: 1.3em; color: #ffa726;">${match.score.fullTime.home} - ${match.score.fullTime.away}</span></p>`
-                        : `<p><strong>📊 Estado:</strong> ${translateStatus(match.status)}</p>`
+                        ? `<div class="match-score">
+                            <span class="score-home">${match.score.fullTime.home}</span>
+                            <span class="score-separator">-</span>
+                            <span class="score-away">${match.score.fullTime.away}</span>
+                        </div>`
+                        : `<div class="match-status">${translateStatus(match.status)}</div>`
                     }
+                    
+                    <div class="match-details">
+                        <div class="match-detail">
+                            <span class="detail-label">🏆 Liga:</span>
+                            <span class="detail-value">${match.competition.name}</span>
+                        </div>
+                        <div class="match-detail">
+                            <span class="detail-label">📅 Fecha:</span>
+                            <span class="detail-value">${dateStr}</span>
+                        </div>
+                        <div class="match-detail">
+                            <span class="detail-label">🕐 Hora:</span>
+                            <span class="detail-value">${timeStr}</span>
+                        </div>
+                    </div>
                 `;
                 
+                // Hacer clickeable solo si el partido ya terminó o está en vivo
+                if (match.status === 'FINISHED' || match.status === 'IN_PLAY' || match.status === 'LIVE') {
+                    card.classList.add('clickable');
+                    card.style.cursor = 'pointer';
+                    card.addEventListener('click', () => {
+                        openMatchModal(match.id, match);
+                    });
+                    
+                    // Efecto hover adicional para indicar que es clickeable
+                    card.addEventListener('mouseenter', () => {
+                        card.style.cursor = 'pointer';
+                    });
+                }
+
                 // Animación de entrada
                 card.style.opacity = '0';
                 card.style.transform = 'translateY(20px)';
@@ -162,57 +207,164 @@ async function fetchData(endpoint) {
         }
     }
 
-    // Función para obtener clasificaciones
-    async function fetchStandings() {
-        const competitionId = leagueSelect.value || 'PL';
-        standingsContainer.innerHTML = createSkeletonLoader(5);
+// Función para obtener clasificaciones y goleadores
+async function fetchStandings() {
+    const competitionId = leagueSelect.value || 'PL';
+    standingsContainer.innerHTML = createSkeletonLoader(5);
 
-        const data = await fetchData(`/standings/${competitionId}`);
+    // Obtener clasificaciones, goleadores y asistidores en paralelo
+    const [standingsData, scorersData] = await Promise.all([
+        fetchData(`/standings/${competitionId}`),
+        fetchData(`/scorers/${competitionId}?limit=10`),
+    ]);
+    
+    if (standingsData?.standings?.length > 0) {
+        standingsContainer.innerHTML = '';
         
-        if (data?.standings?.length > 0) {
-            standingsContainer.innerHTML = '';
-            data.standings[0].table.forEach((team, index) => {
-                const card = document.createElement('div');
-                card.classList.add('team-card');
-                
-                // Añadir clase especial para primeras posiciones
-                let positionClass = '';
-                if (team.position <= 4) positionClass = 'champions-zone';
-                else if (team.position <= 6) positionClass = 'europa-zone';
-                else if (team.position >= data.standings[0].table.length - 2) positionClass = 'relegation-zone';
-
-                card.innerHTML = `
-                    <div class="team-header ${positionClass}">
-                        <h3>${team.position}. ${team.team.name}</h3>
-                        ${team.team.crest ? `<img src="${team.team.crest}" alt="${team.team.name}" style="width: 40px; height: 40px; margin-left: 10px;">` : ''}
+        // Crear contenedor principal con grid
+        const mainContainer = document.createElement('div');
+        mainContainer.className = 'standings-main-container';
+        
+        // COLUMNA IZQUIERDA: Tabla de clasificaciones
+        const tableContainer = document.createElement('div');
+        tableContainer.className = 'standings-table-container';
+        
+        // Crear tabla HTML
+        const table = document.createElement('table');
+        table.className = 'standings-table';
+        
+        // Header de la tabla
+        table.innerHTML = `
+            <thead>
+                <tr>
+                    <th class="pos-col">#</th>
+                    <th class="team-col">Equipo</th>
+                    <th class="stat-col" title="Jugados">PJ</th>
+                    <th class="stat-col" title="Ganados">G</th>
+                    <th class="stat-col" title="Empatados">E</th>
+                    <th class="stat-col" title="Perdidos">P</th>
+                    <th class="stat-col" title="Goles a favor">GF</th>
+                    <th class="stat-col" title="Goles en contra">GC</th>
+                    <th class="stat-col" title="Diferencia de goles">DG</th>
+                    <th class="pts-col">PTS</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        `;
+        
+        const tbody = table.querySelector('tbody');
+        
+        // Llenar filas
+        standingsData.standings[0].table.forEach((team, index) => {
+            const row = document.createElement('tr');
+            
+            // Determinar zona (Champions, Europa, Descenso)
+            let zoneClass = '';
+            if (team.position <= 4) zoneClass = 'champions-zone';
+            else if (team.position <= 6) zoneClass = 'europa-zone';
+            else if (team.position >= standingsData.standings[0].table.length - 2) zoneClass = 'relegation-zone';
+            
+            row.className = zoneClass;
+            
+            const teamLogoUrl = team.team.crest || '';
+            
+            row.innerHTML = `
+                <td class="pos-col"><strong>${team.position}</strong></td>
+                <td class="team-col">
+                    <div class="team-info">
+                        ${teamLogoUrl ? `<img src="${teamLogoUrl}" alt="${team.team.name}" class="team-logo" loading="lazy">` : ''}
+                        <span class="team-name">${team.team.name}</span>
                     </div>
-                    <div class="team-stats">
-                        <p><strong>🎮 Jugados:</strong> ${team.playedGames}</p>
-                        <p><strong>✅ Ganados:</strong> ${team.won}</p>
-                        <p><strong>🤝 Empatados:</strong> ${team.draw}</p>
-                        <p><strong>❌ Perdidos:</strong> ${team.lost}</p>
-                        <p><strong>⭐ Puntos:</strong> <span style="font-size: 1.3em; color: #ffa726;">${team.points}</span></p>
-                        <p><strong>⚽ Goles favor:</strong> ${team.goalsFor}</p>
-                        <p><strong>🥅 Goles contra:</strong> ${team.goalsAgainst}</p>
-                        <p><strong>📊 Diferencia:</strong> ${team.goalDifference > 0 ? '+' : ''}${team.goalDifference}</p>
+                </td>
+                <td class="stat-col">${team.playedGames}</td>
+                <td class="stat-col stat-won">${team.won}</td>
+                <td class="stat-col stat-draw">${team.draw}</td>
+                <td class="stat-col stat-lost">${team.lost}</td>
+                <td class="stat-col">${team.goalsFor}</td>
+                <td class="stat-col">${team.goalsAgainst}</td>
+                <td class="stat-col ${team.goalDifference >= 0 ? 'stat-positive' : 'stat-negative'}">
+                    ${team.goalDifference > 0 ? '+' : ''}${team.goalDifference}
+                </td>
+                <td class="pts-col"><strong>${team.points}</strong></td>
+            `;
+            
+            // Animación
+            row.style.opacity = '0';
+            row.style.transform = 'translateX(-20px)';
+            tbody.appendChild(row);
+            
+            setTimeout(() => {
+                row.style.transition = 'all 0.3s ease';
+                row.style.opacity = '1';
+                row.style.transform = 'translateX(0)';
+            }, index * 30);
+        });
+        
+        tableContainer.appendChild(table);
+        
+        // COLUMNA DERECHA: Goleadores
+        const scorersContainer = document.createElement('div');
+        scorersContainer.className = 'scorers-container';
+        
+        scorersContainer.innerHTML = '<h3 class="scorers-title">⚽ Top Goleadores</h3>';
+        
+        if (scorersData?.scorers?.length > 0) {
+            const scorersList = document.createElement('div');
+            scorersList.className = 'scorers-list';
+            
+            scorersData.scorers.forEach((scorer, index) => {
+                const scorerItem = document.createElement('div');
+                scorerItem.className = 'scorer-item';
+                
+                scorerItem.innerHTML = `
+                    <div class="scorer-rank">${index + 1}</div>
+                    <div class="scorer-info">
+                        <div class="scorer-name">${scorer.player.name}</div>
+                        <div class="scorer-team">${scorer.team.name}</div>
+                    </div>
+                    <div class="scorer-stats">
+                        <div class="scorer-goals">${scorer.goals}</div>
+                        <div class="scorer-label">goles</div>
                     </div>
                 `;
                 
-                // Animación de entrada
-                card.style.opacity = '0';
-                card.style.transform = 'translateX(-20px)';
-                standingsContainer.appendChild(card);
+                // Animación
+                scorerItem.style.opacity = '0';
+                scorerItem.style.transform = 'translateX(20px)';
+                scorersList.appendChild(scorerItem);
                 
                 setTimeout(() => {
-                    card.style.transition = 'all 0.3s ease';
-                    card.style.opacity = '1';
-                    card.style.transform = 'translateX(0)';
-                }, index * 50);
+                    scorerItem.style.transition = 'all 0.3s ease';
+                    scorerItem.style.opacity = '1';
+                    scorerItem.style.transform = 'translateX(0)';
+                }, index * 100);
             });
+            
+            scorersContainer.appendChild(scorersList);
         } else {
-            standingsContainer.innerHTML = '<p style="text-align: center; padding: 2rem; color: #ff6b6b;">❌ Error al cargar las clasificaciones.</p>';
-        }
+            scorersContainer.innerHTML += '<p class="no-data">No hay datos de goleadores disponibles</p>';
+        }    
+
+        // Agregar ambas columnas al contenedor principal
+        mainContainer.appendChild(tableContainer);
+        mainContainer.appendChild(scorersContainer);
+        
+        standingsContainer.appendChild(mainContainer);
+        
+    } else {
+        standingsContainer.innerHTML = '<p style="text-align: center; padding: 2rem; color: #ff6b6b;">❌ Error al cargar las clasificaciones.</p>';
     }
+}
+
+// Función para obtener goleadores
+async function fetchScorers(competitionId, limit = 5) {
+    const data = await fetchData(`/scorers/${competitionId}?limit=${limit}`);
+    
+    if (data?.scorers?.length > 0) {
+        return data.scorers;
+    }
+    return [];
+}
 
     // Función para crear skeleton loader
     function createSkeletonLoader(count = 3) {
@@ -317,4 +469,230 @@ async function fetchData(endpoint) {
 
     // Cargar partidos al iniciar
     fetchMatches('FINISHED');
-});
+
+    // ============================================
+    // MODAL DE ESTADÍSTICAS DEL PARTIDO
+    // ============================================
+    
+    const matchModal = document.getElementById('match-modal');
+    const modalBody = document.getElementById('modal-body');
+    const modalClose = document.querySelector('.modal-close');
+    
+    // Cerrar modal
+    function closeModal() {
+        matchModal.classList.remove('active');
+        document.body.style.overflow = 'auto';
+    }
+    
+    if (modalClose) {
+        modalClose.addEventListener('click', closeModal);
+    }
+    
+    // Cerrar al hacer clic fuera del modal
+    matchModal.addEventListener('click', (e) => {
+        if (e.target === matchModal) {
+            closeModal();
+        }
+    });
+    
+    // Cerrar con tecla ESC
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && matchModal.classList.contains('active')) {
+            closeModal();
+        }
+    });
+    
+    // Función para abrir modal con estadísticas
+    async function openMatchModal(matchId, match) {
+        matchModal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+        
+        // Mostrar loading
+        modalBody.innerHTML = `
+            <div class="modal-loading">
+                <div class="spinner"></div>
+                <p>Cargando estadísticas del partido...</p>
+            </div>
+        `;
+        
+        // Obtener datos completos del partido
+        const matchData = await fetchData(`/match/${matchId}`);
+        
+        if (!matchData) {
+            modalBody.innerHTML = `
+                <div style="text-align: center; padding: 2rem;">
+                    <p style="color: var(--danger-color);">Error al cargar las estadísticas del partido.</p>
+                </div>
+            `;
+            return;
+        }
+        
+        // Generar HTML del modal
+        modalBody.innerHTML = generateModalContent(matchData);
+    }
+    
+    // Generar contenido del modal
+    function generateModalContent(match) {
+        const homeTeam = match.homeTeam;
+        const awayTeam = match.awayTeam;
+        const score = match.score;
+        
+        let html = `
+            <div class="modal-header">
+                <div class="modal-match-info">
+                    ${match.competition.name} • ${new Date(match.utcDate).toLocaleDateString('es-ES', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    })}
+                </div>
+                
+                <div class="modal-teams">
+                    <div class="modal-team">
+                        ${homeTeam.crest ? `<img src="${homeTeam.crest}" alt="${homeTeam.name}" class="modal-team-logo">` : ''}
+                        <div class="modal-team-name">${homeTeam.name}</div>
+                    </div>
+                    
+                    <div class="modal-score">
+                        <span>${score.fullTime.home || 0}</span>
+                        <span style="font-size: 1.5rem; color: var(--cobra-green);">-</span>
+                        <span>${score.fullTime.away || 0}</span>
+                    </div>
+                    
+                    <div class="modal-team">
+                        ${awayTeam.crest ? `<img src="${awayTeam.crest}" alt="${awayTeam.name}" class="modal-team-logo">` : ''}
+                        <div class="modal-team-name">${awayTeam.name}</div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Goleadores
+        if (match.goals && match.goals.length > 0) {
+            html += `
+                <div class="scorers-section">
+                    <h3 class="section-title">⚽ Goleadores</h3>
+                    <div class="goals-list">
+            `;
+            
+            match.goals.forEach(goal => {
+                const isHome = goal.team.id === homeTeam.id;
+                const teamLogo = isHome ? homeTeam.crest : awayTeam.crest;
+                
+                html += `
+                    <div class="goal-item">
+                        ${teamLogo ? `<img src="${teamLogo}" alt="Team" class="goal-team">` : ''}
+                        <div class="goal-info">
+                            <div class="goal-player">${goal.scorer.name}</div>
+                            ${goal.assist ? `<div class="goal-type">Asistencia: ${goal.assist.name}</div>` : ''}
+                        </div>
+                        <div class="goal-time">${goal.minute}'</div>
+                    </div>
+                `;
+            });
+            
+            html += `
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Estadísticas del partido (si existen)
+        if (match.statistics && match.statistics.length > 0) {
+            html += `<div class="stats-section">`;
+            
+            const homeStats = match.statistics.find(s => s.team.id === homeTeam.id);
+            const awayStats = match.statistics.find(s => s.team.id === awayTeam.id);
+            
+            if (homeStats && awayStats) {
+                // Posesión
+                if (homeStats.possession !== null) {
+                    html += generateStatRow('Posesión', homeStats.possession, awayStats.possession, '%');
+                }
+                
+                // Tiros totales
+                if (homeStats.shots_total !== null) {
+                    html += generateStatRow('Tiros', homeStats.shots_total, awayStats.shots_total);
+                }
+                
+                // Tiros a puerta
+                if (homeStats.shots_on_goal !== null) {
+                    html += generateStatRow('Tiros a puerta', homeStats.shots_on_goal, awayStats.shots_on_goal);
+                }
+                
+                // Corners
+                if (homeStats.corner_kicks !== null) {
+                    html += generateStatRow('Corners', homeStats.corner_kicks, awayStats.corner_kicks);
+                }
+                
+                // Faltas
+                if (homeStats.fouls !== null) {
+                    html += generateStatRow('Faltas', homeStats.fouls, awayStats.fouls);
+                }
+            }
+            
+            html += `</div>`;
+        }
+        
+        // Tarjetas amarillas y rojas
+        if (match.bookings && match.bookings.length > 0) {
+            const homeBookings = match.bookings.filter(b => b.team.id === homeTeam.id);
+            const awayBookings = match.bookings.filter(b => b.team.id === awayTeam.id);
+            
+            html += `
+                <div class="cards-section">
+                    <div class="cards-team">
+                        <h4 class="section-title" style="font-size: 1rem;">${homeTeam.shortName || homeTeam.name}</h4>
+                        ${generateBookings(homeBookings)}
+                    </div>
+                    <div class="cards-team">
+                        <h4 class="section-title" style="font-size: 1rem;">${awayTeam.shortName || awayTeam.name}</h4>
+                        ${generateBookings(awayBookings)}
+                    </div>
+                </div>
+            `;
+        }
+        
+        return html;
+    }
+    
+    // Generar fila de estadística con barra
+    function generateStatRow(label, homeValue, awayValue, suffix = '') {
+        const total = homeValue + awayValue || 1;
+        const homePercent = (homeValue / total) * 100;
+        const awayPercent = (awayValue / total) * 100;
+        
+        return `
+            <div class="stat-row">
+                <div class="stat-value">${homeValue}${suffix}</div>
+                <div class="stat-bar-container">
+                    <div class="stat-bar">
+                        <div class="stat-fill-home" style="width: ${homePercent}%"></div>
+                        <div class="stat-fill-away" style="width: ${awayPercent}%"></div>
+                    </div>
+                </div>
+                <div class="stat-label">${label}</div>
+                <div class="stat-value">${awayValue}${suffix}</div>
+            </div>
+        `;
+    }
+    
+    // Generar tarjetas
+    function generateBookings(bookings) {
+        if (bookings.length === 0) {
+            return '<p style="color: var(--text-secondary); font-size: 0.9rem;">Sin tarjetas</p>';
+        }
+        
+        return bookings.map(booking => `
+            <div class="card-item">
+                <div class="card-icon ${booking.card === 'YELLOW_CARD' ? 'yellow-card' : 'red-card'}"></div>
+                <div class="card-player">${booking.player.name}</div>
+                <div class="card-time">${booking.minute}'</div>
+            </div>
+        `).join('');
+    }
+
+    // Cargar partidos al iniciar
+    fetchMatches('FINISHED');
+});   

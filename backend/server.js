@@ -90,6 +90,36 @@ app.get('/api/competition/:competitionId', async (req, res) => {
     }
 });
 
+// Obtener goleadores de una ccompeticion
+app.get('/api/scorers/:competitionId', async (req, res) => {
+    try {
+        const { competitionId } = req.params;
+        const limit = req.query.limit || 10; // Top 10 por defecto
+
+        const data = await fetchFromFootballAPI(`/competitions/${competitionId}/scorers?limit=${limit}`);
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({
+            error: 'Errol al obtener goleadores',
+            message: error.message
+        });
+    }
+});
+
+// Obtener detalles de un partido específico (incluye estadísticas)
+app.get('/api/match/:matchId', async (req, res) => {
+    try {
+        const { matchId } = req.params;
+        const data = await fetchFromFootballAPI(`/matches/${matchId}`);
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({ 
+            error: 'Error al obtener detalles del partido',
+            message: error.message 
+        });
+    }
+});
+
 // Iniciar servidor
 app.listen(PORT, () => {
     console.log(`🐍 Cobra Scores Backend corriendo en http://localhost:${PORT}`);
