@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Detectar si estamos en desarrollo o producción
     const API_URL = window.location.hostname === 'localhost' 
         ? 'http://localhost:3000/api'
-        : 'https://TU-BACKEND-URL.railway.app/api';  // ← Cambiaremos esto después
+        : 'https://cobra-scores.onrender.com/api';  
 
     const matchesContainer = document.getElementById('matches-container');
     const calendarContainer = document.getElementById('calendar-container');

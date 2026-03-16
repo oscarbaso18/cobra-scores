@@ -11,8 +11,8 @@ const PORT = process.env.PORT || 3000;
 const allowedOrigins = [
     'http://localhost:5500',
     'http://127.0.0.1:5500',
-    'https://cobra-scores.vercel.app',  // ← Tu dominio de Vercel
-    'https://tu-dominio-custom.com'     // ← Si tienes dominio propio
+    'https://cobra-scores.vercel.app',
+    'https://cobra-scores-oscarbaso.vercel.app'
 ];
 
 app.use(cors({
