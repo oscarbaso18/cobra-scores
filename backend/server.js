@@ -4,26 +4,38 @@ require('dotenv').config();
 const axios = require('axios');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 
 // Middleware
 // CORS configurado para producción
+
 const allowedOrigins = [
     'http://localhost:5500',
     'http://127.0.0.1:5500',
     'https://cobra-scores.vercel.app',
-    'https://cobra-scores-oscarbaso.vercel.app'
+    'https://cobra-scores-oscarbaso.vercel.app',
+    /https:\/\/.*\.vercel\.app$/  // Permite cualquier subdominio de Vercel
 ];
 
 app.use(cors({
     origin: function(origin, callback) {
-        // Permitir requests sin origin (como Postman)
+        // Permitir requests sin origin (como mobile apps, Postman, etc.)
         if (!origin) return callback(null, true);
         
-        if (allowedOrigins.indexOf(origin) === -1) {
-            return callback(new Error('CORS no permitido'), false);
+        // Verificar si el origin está en la lista o coincide con el regex
+        const isAllowed = allowedOrigins.some(allowedOrigin => {
+            if (allowedOrigin instanceof RegExp) {
+                return allowedOrigin.test(origin);
+            }
+            return allowedOrigin === origin;
+        });
+        
+        if (isAllowed) {
+            return callback(null, true);
         }
-        return callback(null, true);
+        
+        console.log('CORS bloqueado para:', origin);
+        return callback(new Error('CORS no permitido'), false);
     },
     credentials: true
 }));
